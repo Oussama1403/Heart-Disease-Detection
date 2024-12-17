@@ -57,6 +57,7 @@ This project is a Flask-based web application designed to predict the likelihood
     <img src="screenshots/form.png" alt="Form" style="width: 40%;"/>
     <img src="screenshots/result.png" alt="Result" style="width: 40%;"/>
 </div>
+
 ---
 
 ## **License**  
