@@ -1,287 +1,133 @@
-{% extends "base.html" %} {% block title %}Predict Heart Disease{% endblock %}
+{% extends "base.html" %}
+
 {% block content %}
-<div class="container mt-5">
-  <!-- Hero Section -->
-  <div class="hero-section text-center py-5 rounded shadow">
-    <h1 class="display-4">Heart Disease Prediction</h1>
-    <p class="lead">
-      Use this tool to assess the likelihood of heart disease based on your
-      medical details.
-    </p>
-  </div>
+<div class="app-container">
+    <div class="app-header">
+        <h1>Heart Disease Risk Assessment</h1>
+        <p>Fill in your health metrics below to assess your risk of heart disease</p>
+    </div>
 
-  <!-- Result Section -->
-  {% if result is not none %}
-  <div
-    class="alert {% if result == 'Positive for Heart Disease' %}alert-danger{% else %}alert-info{% endif %} text-center mt-4"
-  >
-    <strong>Prediction Result:</strong>
-    <span
-      class="badge {% if result == 'Positive for Heart Disease' %}bg-danger{% else %}bg-info{% endif %}"
-    >
-      {{ result }}
-    </span>
-    <span
-      class="badge {% if result == 'Positive for Heart Disease' %}bg-danger{% else %}bg-info{% endif %}"
-    >
-      {{ probability }}
-    </span>
-  </div>
-  {% endif %}
+    {% if error %}
+        <div class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ error }}
+        </div>
+    {% endif %}
 
-  <!-- Form Section -->
-  <div class="card mt-5 shadow">
-    <div class="card-body">
-      <h5 class="card-title text-center mb-4" style="color: #4de952;"   >Please Fill Out the Details Below</h5>
-      <form
-        action="/predict"
-        method="POST"
-        class="row g-3 needs-validation"
-        novalidate
-      >
-        <!-- Age Input -->
-        <div class="col-md-6">
-          <label for="age" class="form-label"
-            >Age <i class="bi bi-person-fill"></i
-          ></label>
-          <input
-            type="number"
-            class="form-control"
-            id="age"
-            name="age"
-            placeholder="Enter your age"
-            required
-          />
-          <div class="invalid-feedback">Please enter your age.</div>
+    <div class="app-content">
+        <div class="form-container">
+            <form id="predictionForm" method="POST">
+                <div class="form-grid">
+                    {% for field in ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal'] %}
+                    <div class="form-group">
+                        <label for="{{ field }}">
+                            {{ field|capitalize }}
+                            <span class="tooltip" data-tooltip="{{ feature_descriptions[field] }}">
+                                <i class="fas fa-info-circle"></i>
+                            </span>
+                        </label>
+                        <input type="number" id="{{ field }}" name="{{ field }}" step="any" required
+                               placeholder="Enter {{ field }}" class="form-input">
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">
+                        <i class="fas fa-heartbeat"></i> Assess Risk
+                    </button>
+                    <button type="reset" class="btn-reset">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <!-- Sex Input -->
-        <div class="col-md-6">
-          <label for="sex" class="form-label"
-            >Sex <i class="bi bi-gender-ambiguous"></i
-          ></label>
-          <select class="form-select" id="sex" name="sex" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="1">Male</option>
-            <option value="0">Female</option>
-          </select>
-          <div class="invalid-feedback">Please select your sex.</div>
-        </div>
-
-        <!-- Example for Chest Pain Type -->
-        <div class="col-md-6">
-          <label for="cp" class="form-label"
-            >Chest Pain Type <i class="bi bi-heart"></i
-          ></label>
-          <select class="form-select" id="cp" name="cp" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="0">Typical Angina</option>
-            <option value="1">Atypical Angina</option>
-            <option value="2">Non-anginal Pain</option>
-            <option value="3">Asymptomatic</option>
-          </select>
-          <div class="invalid-feedback">Please select a chest pain type.</div>
-        </div>
-
-        <!-- Resting Blood Pressure -->
-        <div class="col-md-6">
-          <label for="trestbps" class="form-label"
-            >Resting Blood Pressure (mm Hg) <i class="bi bi-heart-pulse"></i
-          ></label>
-          <input
-            type="number"
-            class="form-control"
-            id="trestbps"
-            name="trestbps"
-            placeholder="Enter resting blood pressure"
-            required
-          />
-          <div class="invalid-feedback">
-            Please enter the resting blood pressure.
-          </div>
-        </div>
-
-        <!-- Cholesterol -->
-        <div class="col-md-6">
-          <label for="chol" class="form-label"
-            >Cholesterol (mg/dL) <i class="bi bi-droplet"></i
-          ></label>
-          <input
-            type="number"
-            class="form-control"
-            id="chol"
-            name="chol"
-            placeholder="Enter cholesterol level"
-            required
-          />
-          <div class="invalid-feedback">
-            Please enter the cholesterol level.
-          </div>
-        </div>
-
-        <!-- Fasting Blood Sugar -->
-        <div class="col-md-6">
-          <label for="fbs" class="form-label"
-            >Fasting Blood Sugar > 120 mg/dL <i class="bi bi-glucose"></i
-          ></label>
-          <select class="form-select" id="fbs" name="fbs" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="1">True</option>
-            <option value="0">False</option>
-          </select>
-          <div class="invalid-feedback">
-            Please select fasting blood sugar status.
-          </div>
-        </div>
-
-        <!-- Resting ECG Results -->
-        <div class="col-md-6">
-          <label for="restecg" class="form-label"
-            >Resting ECG Results <i class="bi bi-activity"></i
-          ></label>
-          <select class="form-select" id="restecg" name="restecg" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="0">Normal</option>
-            <option value="1">Having ST-T Wave Abnormality</option>
-            <option value="2">Showing Left Ventricular Hypertrophy</option>
-          </select>
-          <div class="invalid-feedback">Please select resting ECG results.</div>
-        </div>
-
-        <!-- Maximum Heart Rate Achieved -->
-        <div class="col-md-6">
-          <label for="thalach" class="form-label"
-            >Maximum Heart Rate Achieved <i class="bi bi-speedometer2"></i
-          ></label>
-          <input
-            type="number"
-            class="form-control"
-            id="thalach"
-            name="thalach"
-            placeholder="Enter maximum heart rate"
-            required
-          />
-          <div class="invalid-feedback">
-            Please enter the maximum heart rate achieved.
-          </div>
-        </div>
-
-        <!-- Exercise Induced Angina -->
-        <div class="col-md-6">
-          <label for="exang" class="form-label"
-            >Exercise Induced Angina
-            <i class="bi bi-exclamation-triangle-fill"></i
-          ></label>
-          <select class="form-select" id="exang" name="exang" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="1">Yes</option>
-            <option value="0">No</option>
-          </select>
-          <div class="invalid-feedback">
-            Please select if exercise induced angina occurred.
-          </div>
-        </div>
-
-        <!-- Oldpeak (ST Depression) -->
-        <div class="col-md-6">
-          <label for="oldpeak" class="form-label"
-            >Oldpeak (ST Depression) <i class="bi bi-graph-down"></i
-          ></label>
-          <input
-            type="number"
-            step="0.1"
-            class="form-control"
-            id="oldpeak"
-            name="oldpeak"
-            placeholder="Enter ST depression"
-            required
-          />
-          <div class="invalid-feedback">
-            Please enter the ST depression value.
-          </div>
-        </div>
-
-        <!-- Slope of the Peak Exercise ST Segment -->
-        <div class="col-md-6">
-          <label for="slope" class="form-label"
-            >Slope of the Peak Exercise ST Segment
-            <i class="bi bi-bar-chart-line"></i
-          ></label>
-          <select class="form-select" id="slope" name="slope" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="0">Upsloping</option>
-            <option value="1">Flat</option>
-            <option value="2">Downsloping</option>
-          </select>
-          <div class="invalid-feedback">
-            Please select the slope of the peak exercise ST segment.
-          </div>
-        </div>
-
-        <!-- Number of Major Vessels -->
-        <div class="col-md-6">
-          <label for="ca" class="form-label"
-            >Number of Major Vessels Colored by Fluoroscopy
-            <i class="bi bi-camera-video"></i
-          ></label>
-          <input
-            type="number"
-            class="form-control"
-            id="ca"
-            name="ca"
-            placeholder="Enter number of major vessels (0–4)"
-            required
-          />
-          <div class="invalid-feedback">
-            Please enter the number of major vessels.
-          </div>
-        </div>
-
-        <!-- Thalassemia -->
-        <div class="col-md-6">
-          <label for="thal" class="form-label"
-            >Thalassemia <i class="bi bi-bloodtype"></i
-          ></label>
-          <select class="form-select" id="thal" name="thal" required>
-            <option value="" selected disabled>Choose...</option>
-            <option value="1">Normal</option>
-            <option value="2">Fixed Defect</option>
-            <option value="3">Reversible Defect</option>
-          </select>
-          <div class="invalid-feedback">
-            Please select the thalassemia type.
-          </div>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="col-12 text-center">
-            <button class="btn btn-success btn-lg mt-4" type="submit">
-                <i class="bi bi-calculator"></i> Predict
-            </button>
+        {% if result %}
+        <div class="results-container">
+            <div class="result-card">
+                <div class="result-header">
+                    <h2>Assessment Result</h2>
+                    <div class="risk-level {{ 'high-risk' if result.prediction == 1 else 'low-risk' }}">
+                        {{ 'High Risk' if result.prediction == 1 else 'Low Risk' }}
+                    </div>
+                </div>
+                
+                <div class="probability-meter">
+                    <div class="meter-labels">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                    <div class="meter-bar">
+                        <div class="meter-fill" style="width: {{ result.probability }}%"></div>
+                    </div>
+                    <div class="probability-value">
+                        Probability: {{ result.probability }}%
+                    </div>
+                </div>
+                
+                <div class="result-message">
+                    {% if result.prediction == 1 %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Recommendation:</strong> Based on your inputs, you may be at risk for heart disease. 
+                        Please consult with a healthcare professional for further evaluation.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Recommendation:</strong> Your risk appears to be low, but maintain regular check-ups 
+                        and a heart-healthy lifestyle.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="visualization-section">
+                <h3>Feature Analysis</h3>
+                <div class="chart-container">
+                    <canvas id="featureImportanceChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="riskFactorsChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="health-tips">
+                <h3>Heart Health Tips</h3>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <i class="fas fa-utensils"></i>
+                        <h4>Healthy Diet</h4>
+                        <p>Eat plenty of fruits, vegetables, whole grains, and lean proteins.</p>
+                    </div>
+                    <div class="tip-card">
+                        <i class="fas fa-running"></i>
+                        <h4>Regular Exercise</h4>
+                        <p>Aim for at least 150 minutes of moderate exercise per week.</p>
+                    </div>
+                    <div class="tip-card">
+                        <i class="fas fa-smoking-ban"></i>
+                        <h4>Avoid Smoking</h4>
+                        <p>Smoking significantly increases heart disease risk.</p>
+                    </div>
+                    <div class="tip-card">
+                        <i class="fas fa-bed"></i>
+                        <h4>Quality Sleep</h4>
+                        <p>Get 7-9 hours of quality sleep each night.</p>
+                    </div>
+                </div>
+            </div>
         </div>
         
-      </form>
+        <script>
+            const resultData = {{ result|tojson|safe }};
+            document.addEventListener('DOMContentLoaded', function() {
+                initializeCharts(resultData);
+            });
+        </script>
+        {% endif %}
     </div>
-  </div>
 </div>
-
-<script>
-  (function () {
-    "use strict";
-    var forms = document.querySelectorAll(".needs-validation");
-    Array.prototype.slice.call(forms).forEach(function (form) {
-      form.addEventListener(
-        "submit",
-        function (event) {
-          if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          form.classList.add("was-validated");
-        },
-        false
-      );
-    });
-  })();
-</script>
 {% endblock %}
